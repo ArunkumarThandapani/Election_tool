@@ -211,6 +211,29 @@
   font-family: 'Space Grotesk', sans-serif;
 }
 
+.panel {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  margin-bottom: 16px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
 .filters {
   display: flex;
   gap: 12px;
@@ -298,6 +321,9 @@
 .table {
   display: grid;
   gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .table-row {

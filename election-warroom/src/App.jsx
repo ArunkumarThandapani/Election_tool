@@ -457,24 +457,33 @@ export default function App() {
     return Array.from(set).sort((a, b) => a.localeCompare(b))
   }, [ondriyumRows])
 
-  const allowedBooths = useMemo(() => {
-    if (ondriyumFilter) {
-      return new Set(
-        ondriyumRows
-          .filter((row) => row.ondriyum === ondriyumFilter)
-          .map((row) => row.booth),
-      )
+  const masterBooths = useMemo(() => {
+    if (ondriyumRows.length) {
+      return ondriyumRows.map((row) => ({
+        booth: row.booth,
+        ondriyum: row.ondriyum || '',
+      }))
     }
+    const list = []
+    for (let i = BOOTH_MIN; i <= BOOTH_MAX; i += 1) {
+      list.push({ booth: String(i), ondriyum: '' })
+    }
+    return list
+  }, [ondriyumRows])
+
+  const allowedBooths = useMemo(() => {
     const minValue = clampBooth(ondriyumMinBooth, BOOTH_MIN)
     const maxValue = clampBooth(ondriyumMaxBooth, BOOTH_MAX)
     const min = Math.min(minValue, maxValue)
     const max = Math.max(minValue, maxValue)
-    const set = new Set()
-    for (let i = min; i <= max; i += 1) {
-      set.add(String(i))
-    }
-    return set
-  }, [ondriyumRows, ondriyumFilter, ondriyumMinBooth, ondriyumMaxBooth])
+
+    const filtered = masterBooths.filter((row) => {
+      if (ondriyumFilter) return row.ondriyum === ondriyumFilter
+      const boothNum = Number(row.booth)
+      return boothNum >= min && boothNum <= max
+    })
+    return new Set(filtered.map((row) => row.booth))
+  }, [masterBooths, ondriyumFilter, ondriyumMinBooth, ondriyumMaxBooth])
 
   const filteredFamilies = useMemo(() => {
     const dateFilter = filterDate.trim()
@@ -577,7 +586,7 @@ export default function App() {
   }, [filteredPolling])
 
   const ondriyumInsightTotals = useMemo(() => {
-    const totalVotes = combinedOndriyum.reduce(
+    const totalVotes = ondriyumRows.reduce(
       (sum, row) => sum + (row.totalVotes || 0),
       0,
     )
@@ -590,7 +599,7 @@ export default function App() {
       0,
     )
     return { totalVotes, polledVotes, favourableVotes }
-  }, [combinedOndriyum])
+  }, [combinedOndriyum, ondriyumRows])
 
   const ondriyumSummary = useMemo(() => {
     const pollingMap = new Map(pollingRows.map((row) => [row.booth, row]))
@@ -666,11 +675,9 @@ export default function App() {
         .filter((row) => allowedBooths.has(row.booth))
         .map((row) => Number(row.booth)),
     )
-    const missing = []
-    for (let i = BOOTH_MIN; i <= BOOTH_MAX; i += 1) {
-      if (allowedBooths.has(String(i)) && !existing.has(i)) missing.push(i)
-    }
-    return missing
+    return Array.from(allowedBooths)
+      .map((booth) => Number(booth))
+      .filter((booth) => !existing.has(booth))
   }, [familyRows, allowedBooths])
 
   const missingPollingBooths = useMemo(() => {
@@ -679,11 +686,9 @@ export default function App() {
         .filter((row) => allowedBooths.has(row.booth))
         .map((row) => Number(row.booth)),
     )
-    const missing = []
-    for (let i = BOOTH_MIN; i <= BOOTH_MAX; i += 1) {
-      if (allowedBooths.has(String(i)) && !existing.has(i)) missing.push(i)
-    }
-    return missing
+    return Array.from(allowedBooths)
+      .map((booth) => Number(booth))
+      .filter((booth) => !existing.has(booth))
   }, [pollingRows, allowedBooths])
 
   const missingOndriyumBooths = useMemo(() => {
@@ -692,11 +697,9 @@ export default function App() {
         .filter((row) => allowedBooths.has(row.booth))
         .map((row) => Number(row.booth)),
     )
-    const missing = []
-    for (let i = BOOTH_MIN; i <= BOOTH_MAX; i += 1) {
-      if (allowedBooths.has(String(i)) && !existing.has(i)) missing.push(i)
-    }
-    return missing
+    return Array.from(allowedBooths)
+      .map((booth) => Number(booth))
+      .filter((booth) => !existing.has(booth))
   }, [ondriyumRows, allowedBooths])
 
   const favouriteMap = useMemo(() => {
@@ -899,9 +902,35 @@ export default function App() {
           </div>
         </div>
 
-        <div className="split">
-          <div>
-            <h4>Valid Family Records</h4>
+          <section className="panel">
+            <div className="panel-header">
+              <h4>Family Insight Cards</h4>
+              <p>Total Families: {formatNumber(familyInsightTotal)}</p>
+            </div>
+            <section className="cards mini">
+              <div className="card">
+                <p className="card-label">Families Met</p>
+                <h2>{formatNumber(familyInsightTotal)}</h2>
+                <p className="card-meta">Within current filters</p>
+              </div>
+              <div className="card">
+                <p className="card-label">Booths Covered</p>
+                <h2>{formatNumber(filteredFamilies.length)}</h2>
+                <p className="card-meta">Valid booths in scope</p>
+              </div>
+              <div className="card">
+                <p className="card-label">Missing Booths</p>
+                <h2>{formatNumber(missingFamilyBooths.length)}</h2>
+                <p className="card-meta">Within current filters</p>
+              </div>
+            </section>
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <h4>Valid Family Records</h4>
+              <p>Total: {formatNumber(filteredFamilies.length)}</p>
+            </div>
             <div className="table">
               <div className="table-row table-head">
                 <span>Date</span>
@@ -922,28 +951,13 @@ export default function App() {
                 <div className="empty">No matching family records.</div>
               )}
             </div>
-          </div>
-
-          <section className="cards mini stack">
-            <div className="card">
-              <p className="card-label">Families Met</p>
-              <h2>{formatNumber(familyInsightTotal)}</h2>
-              <p className="card-meta">Within current filters</p>
-            </div>
-            <div className="card">
-              <p className="card-label">Booths Covered</p>
-              <h2>{formatNumber(filteredFamilies.length)}</h2>
-              <p className="card-meta">Valid booths in scope</p>
-            </div>
-            <div className="card">
-              <p className="card-label">Missing Booths</p>
-              <h2>{formatNumber(missingFamilyBooths.length)}</h2>
-              <p className="card-meta">Within current filters</p>
-            </div>
           </section>
 
-          <div className="summary">
-            <h4>Ondriyum Wise Family Totals</h4>
+          <section className="panel">
+            <div className="panel-header">
+              <h4>Ondriyum Wise Family Totals</h4>
+              <p>Total Ondriyum: {formatNumber(familyOndriyumSummary.length)}</p>
+            </div>
             <div className="table">
               <div className="table-row table-head">
                 <span>Ondriyum</span>
@@ -959,41 +973,17 @@ export default function App() {
                 <div className="empty">No ondriyum family totals yet.</div>
               )}
             </div>
-          </div>
-          <div>
-            <h4>Rejected Family Records ({familyInvalid.length})</h4>
-            <div className="table">
-              <div className="table-row table-head">
-                <span>Date</span>
-                <span>Booth No</span>
-                <span>Families</span>
-                <span>Reason</span>
-              </div>
-              {familyInvalid.map((row, idx) => (
-                <div className="table-row" key={`fam-invalid-${idx}`}>
-                  <span>{row.date || '-'}</span>
-                  <span>{row.booth || '-'}</span>
-                  <span>{row.families}</span>
-                  <span>{row.reason}</span>
-                </div>
-              ))}
-              {!familyInvalid.length && (
-                <div className="empty">No rejected family records.</div>
-              )}
-            </div>
-          </div>
-        </div>
+          </section>
 
-          <div className="missing">
-            <h4>Booths Missing Family Data ({missingFamilyBooths.length})</h4>
+          <section className="panel">
+            <div className="panel-header">
+              <h4>Booths Missing Family Data</h4>
+              <p>Total Missing: {formatNumber(missingFamilyBooths.length)}</p>
+            </div>
             <div className="chip-list">
               {missingFamilyBooths.length ? (
                 missingFamilyBooths.map((booth) => (
-                  <span
-                    className="chip"
-                    key={`fam-miss-${booth}`}
-                    style={{ background: boothColor(booth) }}
-                  >
+                  <span className="chip" key={`fam-miss-${booth}`}>
                     {booth}
                   </span>
                 ))
@@ -1001,7 +991,8 @@ export default function App() {
                 <div className="empty">All booths have family data.</div>
               )}
             </div>
-          </div>
+          </section>
+
         </section>
       )}
 
