@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  election-warroom:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:4173"
+    environment:
+      - VITE_POLLING_SHEET_URL=${VITE_POLLING_SHEET_URL}
+      - VITE_FAMILY_SHEET_URL=${VITE_FAMILY_SHEET_URL}
+      - VITE_ONDRIYUM_SHEET_URL=${VITE_ONDRIYUM_SHEET_URL}
+    command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0 --port 4173"
