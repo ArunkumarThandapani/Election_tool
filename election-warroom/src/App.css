@@ -314,7 +314,8 @@
 .table-row span {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .table-row.table-head {
@@ -422,6 +423,14 @@
     padding: 32px 16px 56px;
   }
 
+  .hero {
+    padding: 24px;
+  }
+
+  .card h2 {
+    font-size: 1.6rem;
+  }
+
   .table-row,
   .dashboard.vote .table-row,
   .dashboard.vote .split .table-row,
@@ -431,10 +440,6 @@
     grid-template-columns: 1fr;
   }
 
-  .table-row span {
-    white-space: normal;
-  }
-
   .insight-row {
     grid-template-columns: 1fr;
   }
@@ -442,5 +447,24 @@
   .footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 1.7rem;
+  }
+
+  .subheading {
+    font-size: 0.9rem;
+  }
+
+  .filters input,
+  .filters select {
+    min-width: 100%;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
   }
 }
