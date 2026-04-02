@@ -14,6 +14,10 @@ const ONDRIYUM_SHEET_URL =
   import.meta.env.VITE_ONDRIYUM_SHEET_URL ||
   'https://docs.google.com/spreadsheets/d/1DGVV21cn3P3i22t_nqd-jxAFalO5wGa69hBLPDyHWHE/edit?usp=sharing'
 
+const PEOPLE_ISSUES_URL =
+  import.meta.env.VITE_PEOPLE_ISSUES_URL ||
+  'https://docs.google.com/spreadsheets/d/1DG7wdg3Rw5ifdIU0KR_CulwXAHyQAQbpDRNi2GZT1k0/edit?usp=sharing'
+
 const BOOTH_MIN = 1
 const BOOTH_MAX = 327
 
@@ -350,6 +354,48 @@ const parseOndriyumRows = (data) => {
   return { valid: Array.from(latestByBooth.values()), invalid }
 }
 
+const parsePeopleIssuesRows = (data) => {
+  const [headerRow, ...rows] = data
+  const headers = headerRow.map(normalizeHeader)
+
+  const idxDate = 0
+  const idxBooth = 2
+  const idxMobile = 3
+  const idxPetition = 4
+  const idxName = 5
+  const idxTotalVoters = 6
+  const idxAcceptance = 7
+
+  if (headers.length < 8) return []
+
+  const valid = []
+
+  rows.forEach((row) => {
+    if (!row || row.length < 8) return
+    const dateValue = row[idxDate]
+    const boothValue = row[idxBooth]
+    const mobileValue = row[idxMobile]
+    const petitionValue = row[idxPetition]
+    const nameValue = row[idxName]
+    const totalVotersValue = row[idxTotalVoters]
+    const acceptanceValue = row[idxAcceptance]
+
+    if (!isValidBooth(boothValue)) return
+
+    valid.push({
+      date: toDateKey(dateValue),
+      booth: boothValue?.toString().trim() ?? '',
+      mobile: mobileValue?.toString().trim() ?? '',
+      petition: petitionValue?.toString().trim() ?? '',
+      name: nameValue?.toString().trim() ?? '',
+      totalVoters: toNumber(totalVotersValue),
+      acceptance: acceptanceValue?.toString().trim() ?? '',
+    })
+  })
+
+  return valid
+}
+
 const clampPercent = (value, fallback) => {
   const num = Number(value)
   if (!Number.isFinite(num)) return fallback
@@ -376,6 +422,7 @@ export default function App() {
   const [pollingInvalid, setPollingInvalid] = useState([])
   const [ondriyumRows, setOndriyumRows] = useState([])
   const [ondriyumInvalid, setOndriyumInvalid] = useState([])
+  const [peopleIssuesRows, setPeopleIssuesRows] = useState([])
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
   const [filterDate, setFilterDate] = useState('')
@@ -392,11 +439,13 @@ export default function App() {
     const pollingUrl = toCsvUrl(POLLING_SHEET_URL)
     const familyUrl = toCsvUrl(FAMILY_SHEET_URL)
     const ondriyumUrl = toCsvUrl(ONDRIYUM_SHEET_URL)
+    const peopleUrl = toCsvUrl(PEOPLE_ISSUES_URL)
 
-    if (!pollingUrl || !familyUrl || !ondriyumUrl) {
+    if (!pollingUrl || !familyUrl || !ondriyumUrl || !peopleUrl) {
       setFamilyRows([])
       setPollingRows([])
       setOndriyumRows([])
+      setPeopleIssuesRows([])
       setFamilyInvalid([])
       setPollingInvalid([])
       setOndriyumInvalid([])
@@ -422,11 +471,16 @@ export default function App() {
           return parsed.data
         })
 
-    Promise.all([fetchCsv(pollingUrl), fetchCsv(familyUrl), fetchCsv(ondriyumUrl)])
-      .then(([pollingData, familyData, ondriyumData]) => {
+    Promise.all([
+      fetchCsv(pollingUrl),
+      fetchCsv(familyUrl),
+      fetchCsv(ondriyumUrl),
+      fetchCsv(peopleUrl),
+    ]).then(([pollingData, familyData, ondriyumData, peopleData]) => {
         const polling = parsePollingRows(pollingData)
         const families = parseFamilyRows(familyData)
         const ondriyum = parseOndriyumRows(ondriyumData)
+        const people = parsePeopleIssuesRows(peopleData)
 
         setPollingRows(polling.valid)
         setPollingInvalid(polling.invalid)
@@ -434,6 +488,7 @@ export default function App() {
         setFamilyInvalid(families.invalid)
         setOndriyumRows(ondriyum.valid)
         setOndriyumInvalid(ondriyum.invalid)
+        setPeopleIssuesRows(people)
         setStatus('ready')
       })
       .catch((err) => {
@@ -443,6 +498,7 @@ export default function App() {
         setFamilyInvalid([])
         setOndriyumRows([])
         setOndriyumInvalid([])
+        setPeopleIssuesRows([])
         setStatus('error')
         setError(err.message || 'Unable to load the sheet data.')
       })
@@ -522,6 +578,17 @@ export default function App() {
       .filter((row) => allowedBooths.has(row.booth))
       .sort((a, b) => Number(a.booth) - Number(b.booth))
   }, [ondriyumRows, allowedBooths])
+
+  const filteredPeopleIssues = useMemo(() => {
+    return peopleIssuesRows
+      .filter((row) => allowedBooths.has(row.booth))
+      .sort((a, b) => Number(a.booth) - Number(b.booth))
+  }, [peopleIssuesRows, allowedBooths])
+
+  const ondriyumMap = useMemo(
+    () => new Map(ondriyumRows.map((row) => [row.booth, row])),
+    [ondriyumRows],
+  )
 
   const combinedOndriyum = useMemo(() => {
     const pollingMap = new Map(pollingRows.map((row) => [row.booth, row]))
@@ -794,6 +861,13 @@ export default function App() {
           type="button"
         >
           Ondriyum Wise
+        </button>
+        <button
+          className={activeTab === 'people' ? 'active' : ''}
+          onClick={() => setActiveTab('people')}
+          type="button"
+        >
+          People Issues
         </button>
       </section>
 
@@ -1270,6 +1344,46 @@ export default function App() {
             )}
           </div>
         </div>
+        </section>
+      )}
+
+      {activeTab === 'people' && (
+        <section className="dashboard people">
+          <div className="dashboard-header">
+            <div>
+              <h3>People Issues Dashboard</h3>
+              <p>Petition records from the People Issues sheet.</p>
+            </div>
+          </div>
+
+          <div className="table">
+            <div className="table-row table-head">
+              <span>Ondriyum</span>
+              <span>Booth No</span>
+              <span>Name</span>
+              <span>Mobile</span>
+              <span>Issues</span>
+              <span>Total Votes (Family)</span>
+              <span>Acceptance to Vote</span>
+            </div>
+            {filteredPeopleIssues.map((row, idx) => {
+              const ond = ondriyumMap.get(row.booth)
+              return (
+                <div className="table-row" key={`people-${idx}`}>
+                  <span>{ond?.ondriyum || '-'}</span>
+                  <span>{row.booth}</span>
+                  <span>{row.name || '-'}</span>
+                  <span>{row.mobile || '-'}</span>
+                  <span>{row.petition || '-'}</span>
+                  <span>{formatNumber(row.totalVoters)}</span>
+                  <span>{row.acceptance || '-'}</span>
+                </div>
+              )
+            })}
+            {!filteredPeopleIssues.length && (
+              <div className="empty">No people issues records yet.</div>
+            )}
+          </div>
         </section>
       )}
 

@@ -376,6 +376,11 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.dashboard.people .table-row.table-head,
+.dashboard.people .table-row {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
 .summary {
   margin-top: 16px;
 }
@@ -462,7 +467,9 @@
   .dashboard.vote .split .table-row,
   .dashboard.vote .split .table-row.table-head,
   .dashboard.ondriyum .table-row,
-  .dashboard.ondriyum .table-row.table-head {
+  .dashboard.ondriyum .table-row.table-head,
+  .dashboard.people .table-row,
+  .dashboard.people .table-row.table-head {
     grid-template-columns: 1fr;
   }
 

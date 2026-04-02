@@ -1,10 +1,11 @@
 # Election War Room Dashboard
 
-React + Vite frontend that pulls live Google Forms responses (via Google Sheets CSV) and renders three dashboards:
+React + Vite frontend that pulls live Google Forms responses (via Google Sheets CSV) and renders four dashboards:
 
 - Family Intake Dashboard: Date, Booth No, Families Met (latest per booth)
 - Polling Status Dashboard: Booth No, Total Votes, Favourable Votes (latest per booth)
 - Ondriyum Wise Dashboard: Booth-wise polling + ondriyum data with range filters
+- People Issues Dashboard: Booth-wise petitions with name and issue
 
 ## Data sources
 
@@ -30,8 +31,16 @@ Ondriyum Sheet:
 - Column 3: Male
 - Column 4: Female
 - Column 5: Third_Gender
-- Column 6: Ondriyum
-- Column 7: Exact place (optional)
+- Column 6: TotalVotes
+- Column 7: Ondriyum
+- Column 8: Exact place (optional)
+
+People Issues Sheet:
+- Column 1: Timestamp
+- Column 2: Email (ignored)
+- Column 3: Booth No
+- Column 4: Petition
+- Column 5: Name
 
 ## Setup
 
@@ -42,6 +51,7 @@ Ondriyum Sheet:
 VITE_POLLING_SHEET_URL="https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit?gid=<GID>"
 VITE_FAMILY_SHEET_URL="https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit?gid=<GID>"
 VITE_ONDRIYUM_SHEET_URL="https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit?gid=<GID>"
+VITE_PEOPLE_ISSUES_URL="https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit?gid=<GID>"
 ```
 
 3. Install and run:
